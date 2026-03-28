@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account einrichten</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.08);
+      padding: 2rem;
+      width: 100%;
+      max-width: 380px;
+    }
+    h1 { font-size: 1.4rem; margin-bottom: .4rem; color: #111; }
+    p.subtitle { font-size: .9rem; color: #666; margin-bottom: 1.5rem; }
+    .field { margin-bottom: 1rem; }
+    label { font-size: .85rem; color: #444; display: block; margin-bottom: .3rem; }
+    input {
+      width: 100%; padding: .6rem .8rem;
+      border: 1px solid #ddd; border-radius: 8px;
+      font-size: 1rem; outline: none; transition: border-color .15s;
+    }
+    input:focus { border-color: #2563eb; }
+    .btn {
+      width: 100%; padding: .7rem;
+      background: #2563eb; color: #fff;
+      border: none; border-radius: 8px;
+      font-size: 1rem; font-weight: 500;
+      cursor: pointer; transition: opacity .15s;
+      margin-top: .5rem;
+    }
+    .btn:hover { opacity: .85; }
+    .error { color: #ef4444; font-size: .85rem; margin-top: .75rem; min-height: 1.2em; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>Account einrichten</h1>
+  <p class="subtitle">Erster Start – lege deinen Account an.</p>
+  <form id="setup-form">
+    <div class="field">
+      <label for="username">Benutzername</label>
+      <input type="text" id="username" autocomplete="username" required>
+    </div>
+    <div class="field">
+      <label for="password">Passwort</label>
+      <input type="password" id="password" autocomplete="new-password" required>
+    </div>
+    <p class="error" id="error"></p>
+    <button type="submit" class="btn">Account erstellen</button>
+  </form>
+</div>
+<script>
+  document.getElementById('setup-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    document.getElementById('error').textContent = '';
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    const res = await fetch('/api/auth/setup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    if (res.ok) {
+      window.location.href = '/manage';
+    } else {
+      const body = await res.json();
+      document.getElementById('error').textContent = body.error || 'Fehler.';
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "michi-tool",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node --experimental-sqlite server.js"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.0",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0"
+  }
+}

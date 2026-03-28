@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Passwörter verwalten</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.08);
+      padding: 2rem;
+      width: 100%;
+      max-width: 480px;
+    }
+
+    nav {
+      display: flex;
+      gap: .75rem;
+      margin-bottom: 1.5rem;
+      align-items: center;
+    }
+    nav a, nav button {
+      text-decoration: none;
+      color: #555;
+      font-size: .9rem;
+      padding: .35rem .75rem;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      background: none;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    nav a.active, nav a:hover {
+      background: #2563eb;
+      color: #fff;
+      border-color: #2563eb;
+    }
+    nav button:hover { background: #f3f4f6; }
+    nav .spacer { flex: 1; }
+
+    h1 {
+      font-size: 1.4rem;
+      margin-bottom: 1.5rem;
+      color: #111;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: .75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    label {
+      font-size: .85rem;
+      color: #444;
+      margin-bottom: .2rem;
+      display: block;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: .6rem .8rem;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color .15s;
+    }
+    input:focus { border-color: #2563eb; }
+
+    .btn {
+      padding: .65rem 1.2rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: opacity .15s;
+    }
+    .btn:hover { opacity: .85; }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-danger  { background: #ef4444; color: #fff; padding: .35rem .75rem; font-size: .85rem; }
+
+    .error {
+      color: #ef4444;
+      font-size: .85rem;
+      min-height: 1.2em;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #eee;
+      margin: 1.25rem 0;
+    }
+
+    #password-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: .6rem;
+    }
+
+    .pw-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: .65rem 1rem;
+    }
+    .pw-name {
+      font-size: 1rem;
+      color: #222;
+    }
+    .empty-hint {
+      color: #999;
+      font-size: .9rem;
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <nav>
+    <a href="/manage" class="active">Verwalten</a>
+    <a href="/practice">Üben</a>
+    <span class="spacer"></span>
+    <button id="logout-btn">Logout</button>
+  </nav>
+
+  <h1>Passwörter verwalten</h1>
+
+  <form id="create-form">
+    <div>
+      <label for="name">Name</label>
+      <input type="text" id="name" placeholder="z.B. Gmail, GitHub …" autocomplete="off" required>
+    </div>
+    <div>
+      <label for="password">Passwort</label>
+      <input type="password" id="password" placeholder="Passwort eingeben" required>
+    </div>
+    <p class="error" id="form-error"></p>
+    <button type="submit" class="btn btn-primary">Speichern</button>
+  </form>
+
+  <hr class="divider">
+
+  <ul id="password-list">
+    <li class="empty-hint">Lade …</li>
+  </ul>
+</div>
+
+<script>
+  const list = document.getElementById('password-list');
+  const formError = document.getElementById('form-error');
+
+  async function loadPasswords() {
+    const res = await fetch('/api/passwords');
+    const data = await res.json();
+    list.innerHTML = '';
+    if (data.length === 0) {
+      list.innerHTML = '<li class="empty-hint">Noch keine Passwörter gespeichert.</li>';
+      return;
+    }
+    for (const pw of data) {
+      const li = document.createElement('li');
+      li.className = 'pw-item';
+      li.innerHTML = `
+        <span class="pw-name">${escHtml(pw.name)}</span>
+        <button class="btn btn-danger" data-id="${pw.id}">Löschen</button>
+      `;
+      list.appendChild(li);
+    }
+  }
+
+  list.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-id]');
+    if (!btn) return;
+    await fetch(`/api/passwords/${btn.dataset.id}`, { method: 'DELETE' });
+    loadPasswords();
+  });
+
+  document.getElementById('create-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    formError.textContent = '';
+    const name = document.getElementById('name').value.trim();
+    const password = document.getElementById('password').value;
+    const res = await fetch('/api/passwords', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, password }),
+    });
+    if (res.ok) {
+      e.target.reset();
+      loadPasswords();
+    } else {
+      const body = await res.json();
+      formError.textContent = body.error || 'Fehler beim Speichern.';
+    }
+  });
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  document.getElementById('logout-btn').addEventListener('click', async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    window.location.href = '/login';
+  });
+
+  loadPasswords();
+</script>
+</body>
+</html>
