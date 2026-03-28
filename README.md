@@ -51,27 +51,34 @@ apt install -y nodejs git
 ### 3. App clonen & installieren
 
 ```bash
-git clone https://github.com/xarxfy/password-checker.git /opt/michi-tool
-cd /opt/michi-tool
+git clone https://github.com/xarxfy/password-checker.git /opt/password-checker
+cd /opt/password-checker
 npm install
 ```
 
-### 4. Systemdienst einrichten
+### 4. Systemuser anlegen & Rechte setzen
 
 ```bash
-nano /etc/systemd/system/michi-tool.service
+useradd -r -s /bin/false admin
+chown -R admin:admin /opt/password-checker
+```
+
+### 5. Systemdienst einrichten
+
+```bash
+nano /etc/systemd/system/password-checker.service
 ```
 
 ```ini
 [Unit]
-Description=michi-tool
+Description=password-checker
 After=network.target
 
 [Service]
-WorkingDirectory=/opt/michi-tool
+WorkingDirectory=/opt/password-checker
 ExecStart=/usr/bin/node --experimental-sqlite server.js
 Restart=always
-User=nobody
+User=admin
 Environment=NODE_ENV=production
 Environment=PORT=3000
 Environment=SESSION_SECRET=dein-geheimer-zufallsstring
@@ -82,7 +89,7 @@ WantedBy=multi-user.target
 
 ```bash
 systemctl daemon-reload
-systemctl enable --now michi-tool
+systemctl enable --now password-checker
 ```
 
 `SESSION_SECRET` durch einen zufälligen String ersetzen:
@@ -91,11 +98,11 @@ systemctl enable --now michi-tool
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-### 5. Status prüfen
+### 6. Status prüfen
 
 ```bash
-systemctl status michi-tool
-journalctl -u michi-tool -f
+systemctl status password-checker
+journalctl -u password-checker -f
 ```
 
 Beim ersten Aufruf von `http://<LXC-IP>:3000` wird automatisch auf `/setup` weitergeleitet.
